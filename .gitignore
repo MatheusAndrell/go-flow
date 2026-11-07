@@ -1,0 +1,8 @@
+/bin/
+/goflow
+*.out
+*.test
+coverage.*
+.env
+.idea/
+.vscode/
