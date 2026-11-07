@@ -1,0 +1,19 @@
+{
+  "name": "order-processing",
+  "description": "Validates an order, reserves stock and charges payment in parallel, issues the invoice and notifies the customer. Reservation and payment are compensated if a later step fails.",
+  "spec": {
+    "settings": {
+      "default_timeout": "30s",
+      "default_retry": {"max_attempts": 3, "initial_interval": "500ms", "max_interval": "10s", "multiplier": 2, "jitter": 0.2}
+    },
+    "steps": [
+      {"key": "validate", "name": "Validate order", "handler": "orders.validate", "retry": {"max_attempts": 1}},
+      {"key": "reserve", "name": "Reserve stock", "handler": "inventory.reserve", "depends_on": ["validate"],
+       "compensation": {"handler": "inventory.release", "retry": {"max_attempts": 10, "initial_interval": "1s", "max_interval": "1m"}}},
+      {"key": "charge", "name": "Charge payment", "handler": "payment.charge", "depends_on": ["validate"],
+       "compensation": {"handler": "payment.refund", "retry": {"max_attempts": 10, "initial_interval": "1s", "max_interval": "1m"}}},
+      {"key": "invoice", "name": "Issue invoice", "handler": "invoice.issue", "depends_on": ["reserve", "charge"]},
+      {"key": "notify", "name": "Send confirmation", "handler": "notification.send", "depends_on": ["invoice"]}
+    ]
+  }
+}
