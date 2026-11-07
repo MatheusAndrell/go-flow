@@ -19,8 +19,10 @@ published outside the database.
 * State change and "enqueue" are the same transaction: no lost or phantom
   tasks, no outbox relay, one system to operate and back up.
 * Retry scheduling and scheduled executions survive restarts by construction.
-* Throughput is bounded by PostgreSQL write capacity; it will be measured
-  with an end-to-end benchmark once the engine exists.
+* Throughput is bounded by PostgreSQL write capacity. Measured locally:
+  ~250 executions/s (≈750 tasks/s) on a 2-vCPU container with 4 workers
+  (`make bench`). This is ample for orchestration workloads, where tasks are
+  usually much slower than the engine.
 * Idle workers poll (default 500 ms with jitter). Latency to pick up new work
   is bounded by the poll interval. `LISTEN/NOTIFY` could cut it but adds
   connection management; deferred.
