@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: goflow
+    folder: GoFlow
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards
