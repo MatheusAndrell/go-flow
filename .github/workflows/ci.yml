@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: goflow
+          POSTGRES_PASSWORD: goflow
+          POSTGRES_DB: goflow
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U goflow"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: gofmt
+        run: make fmt-check
+      - name: go vet
+        run: make vet
+      - name: tests (unit + integration, race detector)
+        run: make test-integration
+        env:
+          TEST_DB: postgres://goflow:goflow@localhost:5432/postgres?sslmode=disable
+      - name: build
+        run: make build
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: validate compose file
+        run: docker compose config --quiet
+      - name: build image
+        run: docker build -t goflow:ci .
+      - name: smoke test image
+        run: docker run --rm goflow:ci version
